@@ -10,6 +10,7 @@
  */
 
 namespace AFM\Rsync;
+use Symfony\Component\Process\Process;
 
 /**
  * Rsync wrapper. Many options are not implemented,
@@ -165,13 +166,47 @@ class Rsync extends AbstractProtocol
 	 * @param $origin
 	 * @param $target
 	 *
+	 * @return Process
 	 * @throws \InvalidArgumentException If the command failed
 	 */
 	public function sync($origin, $target)
 	{
 		$command = $this->getCommand($origin, $target);
 
-		$command->execute($this->showOutput);
+		$process = new Process($command, null, null, null, null);
+
+		$process->run();
+
+		return $process;
+	}
+
+	/**
+	 * @param $origin
+	 * @param $target
+	 * @return string[]|Process all files including folders (recognizable by trailing slash) or Process in case of failure
+	 */
+	public function syncAndReturnTransferredFiles($origin, $target) {
+
+		$oldVerbose = $this->getVerbose();
+		$this->setVerbose(true);
+		$command = $this->getCommand($origin, $target);
+		$this->setVerbose($oldVerbose);
+
+		$process = new Process($command, null, null, null, null);
+
+		$process->run();
+
+		if(!$process->isSuccessful()) {
+			return $process;
+		}
+
+		$parts = explode("\n\n", $process->getOutput());
+
+		if(!isset($parts[0])) {
+			return $process;
+		}
+
+		return explode("\n", $parts[0]);
 	}
 
 	/**

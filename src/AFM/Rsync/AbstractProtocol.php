@@ -39,15 +39,15 @@ abstract class AbstractProtocol
 	/**
 	 * Sets rsync executable location, i.e.: /usr/bin/rsync
 	 *
-	 * @param $rsyncLocation
+	 * @param $executableLocation
 	 *
 	 * @throws \InvalidArgumentException If the rsync location is not executable
 	 */
-	public function setExecutable($rsyncLocation)
+	public function setExecutable($executableLocation)
 	{
-		if(!is_executable($rsyncLocation))
-			throw new \InvalidArgumentException("Rsync location '". $rsyncLocation. "' is invalid");
+		if(!is_executable($executableLocation))
+			throw new \InvalidArgumentException("Rsync location '". $executableLocation. "' is invalid");
 
-		$this->executable = $rsyncLocation;
+		$this->executable = $executableLocation;
 	}
 }

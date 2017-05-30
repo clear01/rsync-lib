@@ -10,6 +10,7 @@
  */
 
 namespace AFM\Rsync;
+use Symfony\Component\Process\ProcessUtils;
 
 /**
  * Command abstraction class, construct commands
@@ -139,23 +140,18 @@ class Command
 			{
 				if(strlen($argument) == 1)
 				{
-					if ($value['useQuotations'])
-						$command[] = "-" . $argument . " '". $value['value']. "'";
-					else
-						$command[] = "-" . $argument . " ". $value['value'];
+					$command[] = "-" . $argument . " ". $value['value'];
 				}
 				else
 				{
-					if ($value['useQuotations'])
-						$command[] = "--" . (is_string($value['value']) || is_int($value['value']) ? $argument . " '" . $value['value']. "'" : $argument);
-					else
-						$command[] = "--" . (is_string($value['value']) || is_int($value['value']) ? $argument . " " . $value['value'] : $argument);
+					$command[] = "--" . (is_string($value['value']) || is_int($value['value']) ? $argument . " " . ProcessUtils::escapeArgument($value['value']) : $argument);
 				}
 			}
 		}
 
-		if(!empty($this->parameters))
-			$command[] = implode(" ", $this->parameters);
+		foreach($this->parameters as $parameter) {
+			$command[] = ProcessUtils::escapeArgument($parameter);
+		}
 
 		$stringCommand = implode(" ", $command);
 
@@ -165,9 +161,9 @@ class Command
 	/**
 	 * Gets the command string
 	 *
-	 * @return mixed
+	 * @return string
 	 */
-	public function getCommand()
+	public function getCommandString()
 	{
 		if(is_null($this->command))
 			$this->command = $this->constructCommand();
@@ -181,44 +177,8 @@ class Command
 	 */
 	public function __toString()
 	{
-		return $this->getCommand();
+		return $this->getCommandString();
 	}
 
-	/**
-	 * Execute command, with optional output printer
-	 *
-	 * @param bool $showOutput
-	 */
-	public function execute($showOutput = false)
-	{
-		$this->getCommand();
 
-		if($showOutput)
-			$this->executeWithOutput();
-		else
-			shell_exec($this->command);
-	}
-
-	/**
-	 * Execute and buffers command result to print it
-	 *
-	 * @throws \InvalidArgumentException When the command couldn't be executed
-	 */
-	private function executeWithOutput()
-	{
-		if(($fp = popen($this->command, "r")))
-		{
-			while(!feof($fp))
-			{
-				echo fread($fp, 1024);
-				flush();
-			}
-
-			fclose($fp);
-		}
-		else
-		{
-			throw new \InvalidArgumentException("Cannot execute command: '" .$this->command. "'");
-		}
-	}
 }

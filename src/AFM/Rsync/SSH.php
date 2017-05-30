@@ -13,7 +13,7 @@ namespace AFM\Rsync;
 
 /**
  * Abstract SSH connection command. Note that if you
- * don't specify a public key, you will be prompted for
+ * don't specify a private key, you will be prompted for
  * the remote server password
  *
  * @author Alberto <albertofem@gmail.com>
@@ -43,7 +43,13 @@ class SSH extends AbstractProtocol
 	/**
 	 * @var null
 	 */
-	protected $publicKey = null;
+	protected $privateKey = null;
+
+	/** @var  bool */
+	protected $strictHostKeyCheking;
+
+	/** @var  string */
+	protected $userKnownHostsFile;
 
 	/**
 	 * Injects and validates config
@@ -56,7 +62,7 @@ class SSH extends AbstractProtocol
 		$this->setOption($options, 'host', 'setHost');
 		$this->setOption($options, 'port', 'setPort');
 		$this->setOption($options, 'username', 'setUsername');
-		$this->setOption($options, 'public_key', 'setPublicKey');
+		$this->setOption($options, 'private_key', 'setPrivateKey');
         $this->setOption($options, 'strict_host_key_checking', 'setStrictHostKeyChecking');
         $this->setOption($options, 'user_known_hosts_file', 'setUserKnownHostFile');
 	}
@@ -99,23 +105,23 @@ class SSH extends AbstractProtocol
 	}
 
 	/**
-	 * @param $publicKey
+	 * @param $privateKey
 	 * @throws \InvalidArgumentException
 	 */
-	public function setPublicKey($publicKey)
+	public function setPrivateKey($privateKey)
 	{
-		if(!is_readable($publicKey))
-			throw new \InvalidArgumentException("SSH public key '" .$publicKey. "' is not readable");
+		if(!is_readable($privateKey))
+			throw new \InvalidArgumentException("SSH private key '" .$privateKey. "' is not readable");
 
-		$this->publicKey = $publicKey;
+		$this->privateKey = $privateKey;
 	}
 
 	/**
 	 * @return null
 	 */
-	public function getPublicKey()
+	public function getPrivateKey()
 	{
-		return $this->publicKey;
+		return $this->privateKey;
 	}
 
 	/**
@@ -135,15 +141,12 @@ class SSH extends AbstractProtocol
 	}
 
     /**
-     * @param $string
+     * @param bool
      * @throws \InvalidArgumentException
      */
     public function setStrictHostKeyChecking($strictHostKeyCheking)
     {
-        if ($strictHostKeyCheking !== 'yes' && $strictHostKeyCheking !== 'no')
-            throw new \InvalidArgumentException("StrictHostKeyCheking must be set to 'yes' or 'no'");
-
-        $this->strictHostKeyCheking = "StrictHostKeyChecking={$strictHostKeyCheking}";
+        $this->strictHostKeyCheking = "StrictHostKeyChecking=" . ($strictHostKeyCheking ? 'yes' : 'no');
     }
 
     /**
@@ -160,18 +163,15 @@ class SSH extends AbstractProtocol
      */
     public function setUserKnownHostFile($userKnownHostsFile)
     {
-        if (!is_dir($userKnownHostsFile) && $userKnownHostsFile !== '/dev/null')
-            throw new \InvalidArgumentException("UserKnownHostsFile should be set to a directory");
-
-        $this->userKnownHostsFile = "UserKnownHostsFile={$userKnownHostsFile}";
+         $this->userKnownHostsFile = "UserKnownHostsFile={$userKnownHostsFile}";
     }
 
     /**
      * @return $string
      */
-    public function getUserKnownHostFile($userKnownHostFile)
+    public function getUserKnownHostFile()
     {
-        return $this->userKnownHostFile;
+        return $this->userKnownHostsFile;
     }
 
 	/**
@@ -196,8 +196,8 @@ class SSH extends AbstractProtocol
 		if($this->port != 22)
 			$command->addArgument("p", $this->port);
 
-		if(!is_null($this->publicKey))
-			$command->addArgument("i", $this->publicKey, false);
+		if(!is_null($this->privateKey))
+			$command->addArgument("i", $this->privateKey, false);
 
         if (!is_null($this->strictHostKeyCheking))
             $command->addArgument("o", $this->strictHostKeyCheking, false);
