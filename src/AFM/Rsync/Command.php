@@ -129,7 +129,7 @@ class Command
 	protected function constructCommand()
 	{
         $command = array();
-		$command[] = $this->executable;
+		$command[] = ProcessUtils::escapeArgument($this->executable);
 
 		if(!empty($this->options))
 			$command[] = "-" . implode($this->options);
@@ -140,7 +140,7 @@ class Command
 			{
 				if(strlen($argument) == 1)
 				{
-					$command[] = "-" . $argument . " ". $value['value'];
+					$command[] = "-" . $argument . " " . ProcessUtils::escapeArgument($value['value']);
 				}
 				else
 				{
